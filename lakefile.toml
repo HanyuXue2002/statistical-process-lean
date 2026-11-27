@@ -1,0 +1,24 @@
+name = "formalization"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["Formalization"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.34.0-rc2"
+
+[[lean_lib]]
+name = "Formalization"
+
+[[lean_lib]]
+name = "DifferentialGeometry"
+srcDir = "vendor/finite-simplicial-homology"
+globs = ["DifferentialGeometry.+"]
+roots = ["DifferentialGeometry.Topology.SimplicialSet.FiniteRealizationHomology", "DifferentialGeometry.Topology.LocalDegree.SphereVanishing", "DifferentialGeometry.Topology.LocalDegree.SphereGenerator"]

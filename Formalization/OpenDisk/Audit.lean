@@ -1,0 +1,21 @@
+import Formalization.OpenDisk.AuditTools
+import Formalization.OpenDisk.HoppingStarAlgebra
+import Formalization.OpenDisk.SimplicialBulkResponse
+import Formalization.OpenDisk.PhaseDualitySimplicialContraction
+import Formalization.OpenDisk.PhaseDualityClosedComponentsSimplicial
+import Formalization.OpenDisk.StarMarkedEquiv
+import Formalization.OpenDisk.SymmetrySRE
+import Formalization.OpenDisk.ConfigurationHilbert
+import Formalization.OpenDisk.ExcitationTopology
+import Formalization.OpenDisk.ExcitationEquations
+import Formalization.OpenDisk.LocalityUniqueness
+import Formalization.OpenDisk.LocalityClosed
+import Formalization.OpenDisk.BulkPhaseCompletion
+import Formalization.OpenDisk.BulkPhaseGraph
+import Formalization.OpenDisk.BulkPhaseSimplicialGluing
+import Formalization.OpenDisk.BulkPhaseLocalGluingTopology
+import Formalization.OpenDisk.BulkPhaseCanonicalSlice
+
+/-! The final aggregate import is added after all geometric branches stabilize. -/
+
+#audit_open_disk_axioms

@@ -1,0 +1,252 @@
+import Formalization.Section4ReducedFreeFiber
+import Mathlib.AlgebraicTopology.SimplicialSet.RelativeMorphism
+
+set_option linter.style.header false
+
+/-!
+# Section 4: additive relative mapping classes
+
+Mathlib already defines relative morphisms of simplicial sets and their
+relative homotopy classes.  In Section 4 the target is the underlying
+simplicial set of a simplicial abelian group.  Pointwise addition therefore
+makes maps, relative maps with zero boundary value, and their homotopy
+classes into abelian groups.
+
+This file supplies that small missing bridge.  In particular, the notation
+`[X,A]_*` and `[(X,B),A]_*` used in the paper can be interpreted by Mathlib's
+actual simplicial homotopy relation rather than by an unspecified quotient
+group.
+-/
+
+noncomputable section
+
+open CategoryTheory CategoryTheory.Category Opposite Simplicial
+
+namespace GeneralSphereT.Section4
+
+universe u
+
+/-- Forget the degreewise abelian-group structure of a simplicial abelian
+group, retaining its underlying simplicial set. -/
+abbrev underlyingSSet (A : SimplicialObject AddCommGrpCat.{u}) : SSet.{u} :=
+  A ⋙ forget AddCommGrpCat
+
+namespace UnderlyingSSet
+
+variable {X : SSet.{u}} {A : SimplicialObject AddCommGrpCat.{u}}
+
+/-- Pointwise zero map into a simplicial abelian group. -/
+def zeroMap : X ⟶ underlyingSSet A where
+  app Δ := ↾fun _ ↦ 0
+  naturality _ _ θ := by
+    ext x
+    change 0 = (A.map θ).hom 0
+    exact (map_zero (A.map θ).hom).symm
+
+/-- Pointwise addition of maps into a simplicial abelian group. -/
+def addMap (f g : X ⟶ underlyingSSet A) : X ⟶ underlyingSSet A where
+  app Δ := ↾fun x ↦ f.app Δ x + g.app Δ x
+  naturality Δ Δ' θ := by
+    ext x
+    change f.app Δ' ((X.map θ) x) + g.app Δ' ((X.map θ) x) =
+      (A.map θ).hom (f.app Δ x + g.app Δ x)
+    have hf : f.app Δ' ((X.map θ) x) =
+        (A.map θ).hom (f.app Δ x) := by
+      exact ConcreteCategory.congr_hom (f.naturality θ) x
+    have hg : g.app Δ' ((X.map θ) x) =
+        (A.map θ).hom (g.app Δ x) := by
+      exact ConcreteCategory.congr_hom (g.naturality θ) x
+    calc
+      _ = (A.map θ).hom (f.app Δ x) +
+          (A.map θ).hom (g.app Δ x) := congrArg₂ (fun y z ↦ y + z) hf hg
+      _ = _ := (map_add (A.map θ).hom _ _).symm
+
+/-- Pointwise negation of a map into a simplicial abelian group. -/
+def negMap (f : X ⟶ underlyingSSet A) : X ⟶ underlyingSSet A where
+  app Δ := ↾fun x ↦ -f.app Δ x
+  naturality Δ Δ' θ := by
+    ext x
+    change -f.app Δ' ((X.map θ) x) =
+      (A.map θ).hom (-f.app Δ x)
+    have hf : f.app Δ' ((X.map θ) x) =
+        (A.map θ).hom (f.app Δ x) := by
+      exact ConcreteCategory.congr_hom (f.naturality θ) x
+    calc
+      _ = -(A.map θ).hom (f.app Δ x) := congrArg Neg.neg hf
+      _ = _ := (map_neg (A.map θ).hom _).symm
+
+@[simp]
+theorem zeroMap_app_apply (Δ : SimplexCategoryᵒᵖ) (x : X.obj Δ) :
+    (zeroMap (X := X) (A := A)).app Δ x = 0 :=
+  rfl
+
+@[simp]
+theorem addMap_app_apply (f g : X ⟶ underlyingSSet A)
+    (Δ : SimplexCategoryᵒᵖ) (x : X.obj Δ) :
+    (addMap f g).app Δ x = f.app Δ x + g.app Δ x :=
+  rfl
+
+@[simp]
+theorem negMap_app_apply (f : X ⟶ underlyingSSet A)
+    (Δ : SimplexCategoryᵒᵖ) (x : X.obj Δ) :
+    (negMap f).app Δ x = -f.app Δ x :=
+  rfl
+
+/-- Pointwise zero on the mapping set. -/
+instance mapZero : Zero (X ⟶ underlyingSSet A) := ⟨zeroMap⟩
+
+/-- Pointwise addition on the mapping set. -/
+instance mapAdd : Add (X ⟶ underlyingSSet A) := ⟨addMap⟩
+
+/-- Pointwise negation on the mapping set. -/
+instance mapNeg : Neg (X ⟶ underlyingSSet A) := ⟨negMap⟩
+
+/-- Maps from a simplicial set to a simplicial abelian group form an
+abelian group under pointwise operations. -/
+instance mapAddCommGroup : AddCommGroup (X ⟶ underlyingSSet A) where
+  add_assoc f g h := by
+    ext Δ x
+    exact add_assoc _ _ _
+  zero_add f := by
+    ext Δ x
+    exact zero_add _
+  add_zero f := by
+    ext Δ x
+    exact add_zero _
+  neg_add_cancel f := by
+    ext Δ x
+    exact neg_add_cancel _
+  add_comm f g := by
+    ext Δ x
+    exact add_comm _ _
+  nsmul := nsmulRec
+  zsmul := zsmulRec
+
+end UnderlyingSSet
+
+open UnderlyingSSet
+
+namespace RelativeMapping
+
+variable {X : SSet.{u}} (P : X.Subcomplex)
+variable (A : SimplicialObject AddCommGrpCat.{u})
+
+/-- Restriction of a map to a source subcomplex, as an additive
+homomorphism. -/
+def restriction :
+    (X ⟶ underlyingSSet A) →+
+      ((P : SSet) ⟶ underlyingSSet A) where
+  toFun f := P.ι ≫ f
+  map_zero' := by
+    ext Δ x
+    rfl
+  map_add' f g := by
+    ext Δ x
+    rfl
+
+/-- Actual simplicial maps `X ⟶ A` which vanish strictly on `P`. -/
+abbrev RelativeZeroMaps := AddMonoidHom.ker (restriction P A)
+
+/-- The zero vertex in the underlying simplicial set of a simplicial
+abelian group. -/
+abbrev zeroVertex :
+    (underlyingSSet A).obj
+      (Opposite.op (SimplexCategory.mk 0)) :=
+  (0 : A.obj (Opposite.op (SimplexCategory.mk 0)))
+
+/-- The one-point subcomplex of the target generated by zero. -/
+abbrev zeroSubcomplex : (underlyingSSet A).Subcomplex :=
+  SSet.Subcomplex.ofSimplex (zeroVertex A)
+
+/-- The constant zero boundary map from `P` to the zero subcomplex. -/
+def zeroBoundary : (P : SSet) ⟶ (zeroSubcomplex A : SSet) :=
+  SSet.const
+    ⟨zeroVertex A, SSet.Subcomplex.mem_ofSimplex_obj (zeroVertex A)⟩
+
+/-- A constant map at the zero vertex is the pointwise zero map. -/
+theorem const_zeroVertex_eq_zeroMap :
+    SSet.const (X := X) (zeroVertex A) =
+      (0 : X ⟶ underlyingSSet A) := by
+  ext Δ x
+  change (A.map _).hom 0 = 0
+  exact map_zero (A.map _).hom
+
+/-- The chosen boundary map followed by the inclusion of the zero
+subcomplex is the pointwise zero map. -/
+theorem zeroBoundary_comp_inclusion :
+    zeroBoundary P A ≫ (zeroSubcomplex A).ι =
+      (0 : (P : SSet) ⟶ underlyingSSet A) := by
+  ext Δ x
+  change (A.map _).hom 0 = 0
+  exact map_zero (A.map _).hom
+
+namespace RelativeZeroMaps
+
+/-- Regard a strictly zero relative map as Mathlib's native relative
+morphism of simplicial sets. -/
+def toRelativeMorphism (f : RelativeZeroMaps P A) :
+    SSet.RelativeMorphism P (zeroSubcomplex A) (zeroBoundary P A) where
+  map := f.1
+  comm := by
+    have hf : (restriction P A) f.1 = 0 :=
+      AddMonoidHom.mem_ker.mp f.2
+    change P.ι ≫ f.1 = 0 at hf
+    calc
+      P.ι ≫ f.1 = 0 := hf
+      _ = zeroBoundary P A ≫ (zeroSubcomplex A).ι :=
+        (zeroBoundary_comp_inclusion P A).symm
+
+@[simp]
+theorem toRelativeMorphism_map (f : RelativeZeroMaps P A) :
+    (toRelativeMorphism P A f).map = f.1 :=
+  rfl
+
+/-- Every native relative morphism with the chosen zero boundary is a
+strictly zero relative map. -/
+def ofRelativeMorphism
+    (f : SSet.RelativeMorphism P (zeroSubcomplex A) (zeroBoundary P A)) :
+    RelativeZeroMaps P A := by
+  refine ⟨f.map, AddMonoidHom.mem_ker.mpr ?_⟩
+  change P.ι ≫ f.map = 0
+  calc
+    P.ι ≫ f.map = zeroBoundary P A ≫ (zeroSubcomplex A).ι := f.comm
+    _ = 0 := zeroBoundary_comp_inclusion P A
+
+@[simp]
+theorem ofRelativeMorphism_coe
+    (f : SSet.RelativeMorphism P (zeroSubcomplex A) (zeroBoundary P A)) :
+    (ofRelativeMorphism P A f : X ⟶ underlyingSSet A) = f.map :=
+  rfl
+
+/-- Strictly zero maps and Mathlib's native zero-boundary relative
+morphisms are the same data. -/
+def equivRelativeMorphism :
+    RelativeZeroMaps P A ≃
+      SSet.RelativeMorphism P (zeroSubcomplex A) (zeroBoundary P A) where
+  toFun := toRelativeMorphism P A
+  invFun := ofRelativeMorphism P A
+  left_inv f := by
+    apply Subtype.ext
+    rfl
+  right_inv f := by
+    ext
+    rfl
+
+end RelativeZeroMaps
+
+/-- Transport the pointwise abelian-group structure to Mathlib's native
+relative-morphism type. -/
+noncomputable instance relativeMorphismAddCommGroup : AddCommGroup
+    (SSet.RelativeMorphism P (zeroSubcomplex A) (zeroBoundary P A)) :=
+  (RelativeZeroMaps.equivRelativeMorphism P A).symm.addCommGroup
+
+/-- The identification with strict relative maps is additive. -/
+def relativeMorphismAddEquiv :
+    RelativeZeroMaps P A ≃+
+      SSet.RelativeMorphism P (zeroSubcomplex A) (zeroBoundary P A) where
+  __ := RelativeZeroMaps.equivRelativeMorphism P A
+  map_add' _ _ := rfl
+
+end RelativeMapping
+
+end GeneralSphereT.Section4

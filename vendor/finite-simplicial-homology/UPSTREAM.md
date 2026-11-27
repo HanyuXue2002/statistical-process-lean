@@ -1,0 +1,3 @@
+These Lean sources come from [DifferentialGeometry, revision 2472d65964874bee4924b11886ff451fa8b02c2b](https://github.com/qinz1yang/differential-geometry/tree/2472d65964874bee4924b11886ff451fa8b02c2b). The selection consists of the transitive imports of the finite realization comparison and the two results computing reduced integral homology of the Euclidean sphere. The upstream license and notice are included here.
+
+In `Topology/SimplicialSet/ChainColimits.lean`, one application of `Functor.map_mono` closes the preservation-of-monomorphisms proof on the project's mathlib version. Its subsequent tactics were removed.
